@@ -1,20 +1,78 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, StyleSheet } from "react-native";
+import TodoForm from "./components/TodoForm";
+import TodoList from "./components/TodoList";
+import React, { useEffect, useState } from "react";
+import { storeData } from "./utils/storage";
+import { getData } from "./utils/storage";
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+function App() {
+    const [todos, setTodos] = useState([]);
+
+    useEffect(() => {
+        // Store todos in AsyncStorage whenever there's a change
+        storeData("todos", todos);
+    }, [todos]);
+
+    useEffect(() => {
+        // Function to load todos from AsyncStorage when the app starts
+        const loadTodos = async () => {
+            const loadedTodos = await getData("todos");
+            if (loadedTodos) {
+                setTodos(loadedTodos);
+            }
+        };
+
+        // Call the loadTodos function when the component mounts
+        loadTodos();
+    }, []);
+
+    const addTodo = (newTodo) => {
+        if (
+            newTodo.trim() === "" ||
+            todos.some((todo) => todo.title === newTodo)
+        ) {
+            Alert.alert("Error", "Todo cannot be empty or duplicate.");
+            return;
+        }
+
+        setTodos([
+            ...todos,
+            { id: todos.length + 1, title: newTodo, completed: false },
+        ]);
+    };
+
+    const toggleTodo = (id) => {
+        setTodos((prevTodos) => {
+            return prevTodos.map((todo) =>
+                todo.id === id ? { ...todo, completed: !todo.completed } : todo
+            );
+        });
+    };
+
+    const deleteTodo = (id) => {
+        setTodos((prevTodos) => {
+            return prevTodos.filter((todo) => todo.id !== id);
+        });
+    };
+
+    return (
+        <View style={styles.container}>
+            <TodoForm addTodo={addTodo} />
+            <TodoList
+                data={todos}
+                toggleTodo={toggleTodo}
+                deleteTodo={deleteTodo}
+            />
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: "#f0f0f0",
+    },
 });
+
+export default App;
